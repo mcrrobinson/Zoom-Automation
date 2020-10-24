@@ -72,8 +72,8 @@ class GetApplicationInformation():
     def CheckBoundaries(self, dimentions):
         if not(
             # Often if the application is minimised the values will be zero.
-            all(v == 0 for v in dimentions)
-            or
+            # all(v == 0 for v in dimentions)
+            # or
             # Larger than screen size...
             any(v > 1920 for v in dimentions)
             or 
@@ -81,6 +81,8 @@ class GetApplicationInformation():
             any(v < -1920 for v in dimentions)
         ):
             return True
+        else:
+            return False
 
     def FindApplications(self, *args):
         proc_name = args[0] if args else None
@@ -102,33 +104,41 @@ class GetApplicationInformation():
                         self.logger.debug("PID: {0:d} | HWND: {0:d} | Name: {1:s}".format(handle, text))
                         self.ZPToolBarParentWnd_found = True
 
+        print(self.zoom_instances)
         if(self.Zoom_meeting_found):
             self.logger.debug("Zoom meeting was found testing the vector boundaries...")
-            if(self.CheckBoundaries(self.zoom_instances["Zoom_meeting"]["dimentions"])):
+            if(self.CheckBoundaries(self.zoom_instances["Zoom_meeting"]["dimentions"])): # pylint: disable=unsubscriptable-object
                 self.logger.debug("Zoom meeting vector structure is valid. Proceeding.")
                 return self.zoom_instances["Zoom_meeting"]
             else:
                 self.logger.debug("Zoom meeting vector structure is invalid...")
+        if(self.Zoom_client_found or self.ZPToolBarParentWnd_found):
+            self.logger.info("The Zoom meeting was not found, but other windows were found but this is unlikely to record what you want, do you still with to proceed? (N) ")
+            self.user_continue = input(">> ")
+            if self.user_continue.upper() == "Y":
+                if(self.Zoom_client_found):
+                    self.logger.debug("Zoom client was found testing the vector boundaries...")
+                    if(self.CheckBoundaries(self.zoom_instances["Zoom_client"]["dimentions"])): # pylint: disable=unsubscriptable-object
+                        self.logger.debug("Zoom client vector structure is valid. Proceeding.")
+                        return self.zoom_instances["Zoom_client"]
+                    else:
+                        self.logger.debug("Zoom client vector structure is invalid...")
 
-        if(self.Zoom_client_found):
-            self.logger.debug("Zoom client was found testing the vector boundaries...")
-            if(self.CheckBoundaries(self.zoom_instances["Zoom_client"]["dimentions"])):
-                self.logger.debug("Zoom client vector structure is valid. Proceeding.")
-                return self.zoom_instances["Zoom_client"]
+                if(self.ZPToolBarParentWnd_found):
+                    self.logger.debug("Zoom toolbar was found testing the vector boundaries...")
+                    if(self.CheckBoundaries(self.zoom_instances["ZPToolBarParentWnd"]["dimentions"])): # pylint: disable=unsubscriptable-object
+                        self.logger.debug("Zoom toolbar vector structure is valid. Proceeding.")
+                        return self.zoom_instances["ZPToolBarParentWnd"]
+                    else:
+                        self.logger.debug("Zoom toolbar vector structure is invalid...")
+                    self.logger.error("Although Zoom processes were found, none contained a valid vector structure.")
+                    return False
+                else:
+                    self.logger.error("The if check failed, this shouldn't happen.")
+                    return False
             else:
-                self.logger.debug("Zoom client vector structure is invalid...")
-
-        if(self.ZPToolBarParentWnd_found):
-            self.logger.debug("Zoom toolbar was found testing the vector boundaries...")
-            if(self.CheckBoundaries(self.zoom_instances["ZPToolBarParentWnd"]["dimentions"])):
-                self.logger.debug("Zoom toolbar vector structure is valid. Proceeding.")
-                return self.zoom_instances["ZPToolBarParentWnd"]
-            else:
-                self.logger.debug("Zoom toolbar vector structure is invalid...")
-        
-        if not(self.Zoom_meeting_found and self.Zoom_client_found and self.ZPToolBarParentWnd_found):
-            self.logger.error("Zoom was not found, you're fucked... Next time make sure it is open geezer.")
-            return False
+                self.logger.error("Not proceeding.")
+                return False
         else:
-            self.logger.error("Zoom was found and hooked but returned no valid information. Blame windows, it's shit.")
+            self.logger.error("Zoom was not found, you're fucked... Next time make sure it is open geezer.")
             return False

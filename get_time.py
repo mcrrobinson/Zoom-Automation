@@ -1,190 +1,52 @@
-ggetimport logging
+import logging
 from datetime import datetime, time, date
 from time import sleep
-from threading import Thread
+import subprocess
+import conf
+import get_handle as handle
+import sys
 import os
 
 class WebLauncher:
-    def __init__(self):
-        self.logger = logging
-        self.database_systems_recording = False
-        self.programming_recording = False
-        self.core_computing_recording = False
-        self.architecture_and_operating_systems_recording = False
+    def __init__(self, logger):
+        self.logger = logger
+        self.filename = "Lecture_" + str(datetime.now().isoformat()).replace(".", "_").replace(":","-")
+        self.recording = {}
 
-    def record_database_systems_recording(self, moodle_link):
-        os.startfile(moodle_link)
-        while(self.database_systems_recording):
-            self.logger.info("Started recording the databases...")
-            sleep(1)
+        for i in conf.CLASS_MAP:
+            self.recording[conf.CLASS_MAP[i]] = False
 
-    def record_programming_recording(self, moodle_link):
-        while(self.database_systems_recording):
-            self.logger.info("Started recording programming...")
-            sleep(1)
+    def ready_thread(self, lecture):
+        if datetime.now().hour >= lecture["meeting_time"][0] and datetime.now().hour < lecture["meeting_time"][1]:
+            if self.recording[lecture["class_name"]] == False:
+                self.recording[lecture["class_name"]] = True
 
-    def record_core_computing_recording(self, moodle_link):
-        while(self.database_systems_recording):
-            self.logger.info("Started recording core computing,. ...")
-            sleep(1)
+                # Block until it starts.
+                os.popen(lecture["meeting_link"])
+                zoom_information = handle.GetApplicationInformation(self.logger).FindApplications(*sys.argv[1:])
+                if(zoom_information):
+                    proc = subprocess.Popen(f"""ffmpeg -f gdigrab -framerate 20 -offset_x {0} -offset_y {0} -video_size {zoom_information['dimentions'][2]}x{zoom_information['dimentions'][3]} -thread_queue_size 1024 -i desktop -c:v hevc_nvenc -qp 0 -c:a aac -strict -2 -ac 2 -b:a 128k -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" {self.filename}.mkv""")
+                else:
+                    self.logger.debug("Windows had issues handling the application. This is why I reccomend linux.")
 
-    def record_architecture_and_operating_systems_recording(self, moodle_link):
-        while(self.database_systems_recording):
-            self.logger.info("Started recording the databases...")
-            sleep(1)
-
-    def record_networks_recording(self, moodle_link):
-        while(self.database_systems_recording):
-            self.logger.info("Started recording the networks...")
-            sleep(1)
-
+        # For every recording lesson in the dictionary, set to false.
+        else:
+            proc.terminate(self)
+            # If not all the values are set to false in the dictionary iterate
+            # and set them all to false.
+            if not all(value == False for value in conf.CLASS_MAP):
+                for i in conf.CLASS_MAP:
+                    self.recording[conf.CLASS_MAP[i]] = False
             
     def main(self):
         while True:
 
-            # Monday
-            if date.today().weekday() == 0:
-                if datetime.now().hour >= 9 and date.time().hour < 10:
-                    if self.database_systems_recording == False:
-                        self.database_systems_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_database_systems_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-                        
-                elif datetime.now().hour >= 10 and date.time().hour < 12:
-                    if self.programming_recording == False:
-                        self.programming_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_programming_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
+            # Get the current day in words, "Monday, Tuesday, etc.."
+            current_day = conf.WEEKDAYS[date.today().weekday()]
 
-                elif datetime.now().hour >= 12 and date.time().hour < 13:
-                    if self.core_computing_recording == False:
-                        self.core_computing_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_core_computing_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                elif datetime.now().hour >= 13 and date.time().hour < 14:
-                    if self.core_computing_recording == False:
-                        self.core_computing_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_core_computing_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                elif datetime.now().hour >= 16 and date.time().hour < 17:
-                    if self.architecture_and_operating_systems_recording == False:
-                        self.architecture_and_operating_systems_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_architecture_and_operating_systems_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                else:
-                    self.database_systems_recording = False
-                    self.programming_recording = False
-                    self.core_computing_recording = False
-                    self.architecture_and_operating_systems_recording = False
-
-            
-            # Tuesday
-            if date.today().weekday() == 1:
-                if datetime.now().hour >= 11 and date.time().hour < 12:
-                    if self.architecture_and_operating_systems_recording == False:
-                        self.architecture_and_operating_systems_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_architecture_and_operating_systems_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                elif datetime.now().hour >= 12 and date.time().hour < 13:
-                    if self.networks_recording == False:
-                        self.networks_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_networks_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                elif datetime.now().hour >= 15 and date.time().hour < 16:
-                    if self.database_systems_recording == False:
-                        self.database_systems_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_database_systems_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                else:
-                    self.architecture_and_operating_systems_recording = False
-                    self.networks_recording = False
-                    self.database_systems_recording = False
-
-            # Wednesday
-            if date.today().weekday() == 2:
-                if datetime.now().hour >= 12 and date.time().minute < 21:
-                    if self.networks_recording == False:
-                        self.networks_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_networks_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                else:
-                    self.logger.debug("Setting to false...")
-                    self.networks_recording = False
-
-            # Thursday
-            if date.today().weekday() == 3:
-                if datetime.now().hour >= 14 and date.time().hour < 15:
-                    if self.core_computing_recording == False:
-                        self.core_computing_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_core_computing_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-
-                elif datetime.now().hour >= 17 and date.time().hour < 18:
-                    if self.programming_recording == False:
-                        self.programming_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_programming_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-                
-                else:
-                    self.core_computing_recording = False
-                    self.programming_recording = False
-            
-            # Friday
-            if date.today().weekday() == 4:
-                if datetime.now().hour >= 16 and date.time().hour < 17:
-                    if self.core_computing_recording == False:
-                        self.core_computing_recording = True
-                        moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-                        newThread = Thread(target=self.record_core_computing_recording, args=(moodle_link,))
-                        newThread.daemon = True
-                        newThread.start()
-                
-                else:
-                    self.core_computing_recording = False
-
-            # if date.today().weekday() == 6:
-            #     if datetime.now().minute > 56 and datetime.now().hour < 22:
-            #         if self.database_systems_recording == False:
-            #             self.database_systems_recording = True
-            #             moodle_link = "zoommtg://port-ac-uk.zoom.us/join?action=join&confno=87537429380"
-            #             newThread = Thread(target=self.record_database_systems_recording, args=(moodle_link,))
-            #             newThread.daemon = True
-            #             newThread.start()
-                
-            #     else:
-            #         self.database_systems_recording = False
+            # Itearate through the enteriest for the current day and 
+            # pass in the values for the thread.
+            for i in conf.ENTRIES[current_day]:
+                self.ready_thread(conf.ENTRIES[current_day][i])
 
             sleep(1)
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
-    WebLauncher().main()
