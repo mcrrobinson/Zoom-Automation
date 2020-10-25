@@ -1,5 +1,3 @@
-import get_handle as handle
-import record_call as record
 import get_time as lecture
 import logging as logger
 import sys
